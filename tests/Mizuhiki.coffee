@@ -1,0 +1,662 @@
+define [
+    "dojo/main"
+    "util/doh/main"
+    "clazzy/Clazzy"
+    "dojo/cache"
+    "dojo/_base/url"
+    "mizuhiki/abstraction/Lang" #used for event,aspect
+    "mizuhiki/abstraction/Dom" #used for byid,findAllWidgets,unregisterWidget,unregister,parse,create,place,find,register,destroy
+    "mizuhiki/Mizuhiki"
+    "clazzy/Exception"
+    "mizuhiki/TemplatedObject"
+    "mizuhiki/SoyaMilk"
+], (dojo, doh, Class, cache, _url, lang, dom, Renderer, Exception, TemplatedObject, soyamilk) ->
+
+    renderer = new Renderer()
+    DummyClass = Class("namespace.Dummy", null, [null])
+    TemplatedDummyClass = Class("namespace.TemplatedDummy", TemplatedObject)
+
+    doh.register "mizuhiki.tests.Mizuhiki", [ 
+
+        name: "render_control_callsDraw"
+        setUp: () ->
+            #Arrange
+            renderer._drawCalled = false
+            @original_draw = renderer._draw
+            renderer._draw = (control, id, index, data) ->
+                this._drawCalled = true
+        runTest: (t) -> 
+            #Act
+            renderer.render("dummy")
+            #Assert
+            doh.assertTrue(renderer._drawCalled)
+        tearDown: () ->
+            renderer._draw = @original_draw
+    ,
+        name: "_draw_control_allPartsCalled"
+        setUp: () ->
+            # The mother of all mocking!
+            renderer._unbindDataCalled = false
+            @original_unbindData = renderer._unbindData
+            renderer._unbindData = (control, nodeId) ->
+                control._dataBindings = {parsed: false} # just resetting so that later tests with pass
+                this._unbindDataCalled = "_unbindDataCalled"
+
+            renderer._removeWidgetsCalled = false
+            @original_removeWidgets = renderer._removeWidgets    #Dojo specifics, destroyRecursive
+            renderer._removeWidgets = (control, nodeId) ->
+                this._removeWidgetsCalled = "_removeWidgetsCalled"
+
+            renderer._unregisterNodeCalled   = false
+            @original_unregisterNode = renderer._unregisterNode
+            renderer._unregisterNode = (control) ->
+                this._unregisterNodeCalled = "_unregisterNodeCalled"
+
+            renderer._calculateBindingsCalled = false
+            @original_calculateBindings = renderer._calculateBindings
+            renderer._calculateBindings = (control) ->
+                this._calculateBindingsCalled = "_calculateBindingsCalled"
+
+            renderer._parseTemplateCalled = false
+            @original_parseTemplate = renderer._parseTemplate
+            renderer._parseTemplate = (control, id, index, data) ->
+                this._parseTemplateCalled = "_parseTemplateCalled"
+
+            renderer.__frameworkReplaceCustomAttributesCalled = false
+            @original__frameworkReplaceCustomAttributes = renderer.__frameworkReplaceCustomAttributes    #Dojo specifics 
+            renderer.__frameworkReplaceCustomAttributes = (html) ->
+                this.__frameworkReplaceCustomAttributesCalled = "__frameworkReplaceCustomAttributesCalled"
+
+            renderer._placeHtmlCalled = false
+            @original_placeHtml = renderer._placeHtml
+            renderer._placeHtml = (control, html, nodeId) ->
+                this._placeHtmlCalled = "_placeHtmlCalled"
+
+            renderer._registerNodeCalled = false
+            @original_registerNode = renderer._registerNode
+            renderer._registerNode = (control) ->
+                this._registerNodeCalled = "_registerNodeCalled"
+
+            renderer.__frameworkParseCalled = false
+            @original__frameworkParse = renderer.__frameworkParse 
+            renderer.__frameworkParse = (dom) ->
+                this.__frameworkParseCalled = "__frameworkParseCalled"
+
+            renderer._bindDataCalled = false
+            @original_bindData = renderer._bindData 
+            renderer._bindData = (control, nodeId, dom) ->
+                this._bindDataCalled = "_bindDataCalled"
+
+            renderer._cleanDomCalled = false
+            @original_cleanDom = renderer._cleanDom    #Arrange
+            renderer._cleanDom = (dom) ->
+                this._cleanDomCalled = "_cleanDomCalled"
+        runTest: (t) -> 
+            dummyControl = new TemplatedDummyClass()
+            #Act
+            renderer._draw(dummyControl)
+            #Assert
+            doh.assertEqual("_unbindDataCalled", renderer._unbindDataCalled)
+            doh.assertEqual("_removeWidgetsCalled", renderer._removeWidgetsCalled)
+            doh.assertEqual("_unregisterNodeCalled", renderer._unregisterNodeCalled)
+            doh.assertEqual("_calculateBindingsCalled", renderer._calculateBindingsCalled)
+            doh.assertEqual("_parseTemplateCalled", renderer._parseTemplateCalled)
+            doh.assertEqual("__frameworkReplaceCustomAttributesCalled", renderer.__frameworkReplaceCustomAttributesCalled)
+            doh.assertEqual("_placeHtmlCalled", renderer._placeHtmlCalled)
+            doh.assertEqual("_registerNodeCalled", renderer._registerNodeCalled)
+            doh.assertEqual("__frameworkParseCalled", renderer.__frameworkParseCalled)
+            doh.assertEqual("_bindDataCalled", renderer._bindDataCalled)
+            doh.assertEqual("_cleanDomCalled", renderer._cleanDomCalled)
+        tearDown: () ->
+            renderer._unbindData = @original_unbindData
+            renderer._removeWidgets = @original_removeWidgets
+            renderer._unregisterNode = @original_unregisterNode
+            renderer._calculateBindings = @original_calculateBindings
+            renderer._parseTemplate = @original_parseTemplate
+            renderer.__frameworkReplaceCustomAttributes = @original__frameworkReplaceCustomAttributes
+            renderer._placeHtml = @original_placeHtml
+            renderer._registerNode = @original_registerNode
+            renderer.__frameworkParse = @original__frameworkParse
+            renderer._bindData = @original_bindData
+            renderer._cleanDom = @original_cleanDom
+    ,
+        name: "_unbindData_control_unbindsEvents"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control._setterBindings._setterHandle = "setterhandle"
+            @control._setterBindings._domHandle = "domhandle"
+            @control._attachPoints = {"id1": "attachPoint1", "id2": "attachPoint2"}
+            @control._attachEvents = {"id1": ["handle1", "handle2"], "id2": ["handle3", "handle4"]}
+            @control.PreviousId = "someid"
+
+            @control._attachIds["someid"] = {"id1": true, "id2": true}
+
+            @target = ["setterhandle", "domhandle", "handle1", "handle2", "handle3", "handle4"]
+            @originalById = dom.byId
+            dom.byId = (id) -> 
+                document.createElement("div")
+        runTest: (t) -> 
+            disconnected = []
+            @originalEventRemove = lang.event.remove
+            lang.event.remove = (handle) ->
+                disconnected.push handle
+            @originalAspectRemove = lang.aspect.remove
+            lang.aspect.remove = (handle) ->
+                disconnected.push handle
+            #Act
+            renderer._unbindData(@control)
+            #Assert
+            doh.assertEqual(@target, disconnected)
+        tearDown: () ->
+            dom.byId = @originalById
+            lang.event.remove = @originalEventRemove
+            lang.aspect.remove = @originalAspectRemove
+    ,
+        name: "_removeWidgets_control_unregisterAndDestroyWidget"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.PreviousId = "someid"
+        runTest: (t) -> 
+            destroyed = []
+            unregistered = false
+            @originalFindAllWidgets = dom.findAllWidgets
+            dom.findAllWidgets = (id) -> 
+                    [{destroyRecursive: () -> destroyed.push(1)},{destroyRecursive: () -> destroyed.push(2)}]
+            @originalUnregisterWidget = dom.unregisterWidget
+            dom.unregisterWidget = (id) -> 
+                unregistered = true
+            #Act
+            renderer._removeWidgets(@control)
+            #Assert
+            doh.assertEqual([1,2], destroyed)
+            doh.assertTrue unregistered
+        tearDown: () ->
+            dom.findAllWidgets = @originalFindAllWidgets
+            dom.unregisterWidget = @originalUnregisterWidget
+    ,
+        name: "_removeWidgets_control_unregisteredAndDestroyed"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.PreviousId = "someid"
+        runTest: (t) -> 
+            unregistered = false
+            @originalUnregister = dom.unregister
+            dom.unregister = (id) -> 
+                    unregistered = true
+            #Act
+            renderer._unregisterNode(@control)
+            #Assert
+            doh.assertTrue unregistered
+        tearDown: () ->
+            dom.unregister = @originalUnregister
+    ,
+        name: "_calculateBindings_control_correctDataBindingsAndSetterBindings"
+        setUp: () ->
+            #Arrange
+            @originalRender = soyamilk.render
+            soyamilk.render =(itemId, control, partials) -> 
+                itemId.replace("{{ControlId}}", "someid")
+
+            url = "../../../mizuhiki/tests/resources/DummyTemplate.html"
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            @control.templateString = cache new _url(url)
+            @expectedDataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
+            @expectedSetterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
+        runTest: (t) -> 
+            #Act
+            renderer._calculateBindings(@control)
+            #Assert
+            doh.assertEqual(@expectedDataBindings, this.control._dataBindings)
+            doh.assertEqual(@expectedSetterBindings, this.control._setterBindings)
+        tearDown: () ->
+            soyamilk.render = @originalRender
+    ,
+        name: "_parseTemplate_control_soyaMilkRenderCalled"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+        runTest: (t) -> 
+            soyamilkcalled = false
+            @originalRender = soyamilk.render
+            soyamilk.render =(template, data, partials) -> 
+                soyamilkcalled = true
+                "dummyString"
+            #Act
+            renderer._parseTemplate(@control)
+            #Assert
+            doh.assertTrue soyamilkcalled
+        tearDown: () ->
+            soyamilk.render = @originalRender
+    ,
+        name: "_parseTemplate_controlIdIndexData_soyaMilkRenderCalled"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            @id = @control.ControlId + "arrText{{_}}"
+            @index = 1
+            @data = {DataArray: "sometext"}
+            @control._dataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
+            @control._setterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
+            @expectedTemplateString = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
+        runTest: (t) -> 
+            templateString = ""
+            @originalRender = soyamilk.render
+            soyamilk.render =(template, data, partials) -> 
+                templateString = template
+            #Act
+            renderer._parseTemplate(@control, @id, @index, @data)
+            #Assert
+            doh.assertEqual @expectedTemplateString, templateString
+        tearDown: () ->
+            soyamilk.render = @originalRender
+    ,
+        name: "__frameworkReplaceCustomAttributes_string_dojoAttributesReplaced"
+        setUp: () ->
+            #Arrange
+            @text = "blabla data-dojo-attach blabla"
+            @targetText = "blabla data-cleaned-attach blabla"
+        runTest: (t) -> 
+            #Act
+            text = renderer.__frameworkReplaceCustomAttributes(@text)
+            #Assert
+            doh.assertEqual(@targetText, text)
+        tearDown: () ->
+    ,
+        name: "__frameworkParse_dom_parseCalled"
+        setUp: () ->
+            #Arrange
+            @dom = document.createElement("div");
+        runTest: (t) -> 
+            parseCalled = false
+            @originalParse = dom.parse
+            dom.parse =(dom) -> 
+                parseCalled = true
+            #Act
+            renderer.__frameworkParse(@dom)
+            #Assert
+            doh.assertTrue(parseCalled)
+        tearDown: () ->
+            dom.parse = @originalParse
+    ,
+        name: "__frameworkParse_domWithAttribute_parseCalledWithParent"
+        setUp: () ->
+            #Arrange
+            @parent = document.createElement("div");
+            @node = document.createElement("div");
+            @node.setAttribute("data-dojo-type", "somevalue")
+            @parent.appendChild(@node)
+        runTest: (t) -> 
+            parseCalled = false
+            @originalParse = dom.parse
+            parent = @parent
+            dom.parse = (node) -> 
+                parseCalled = node is parent
+            #Act
+            renderer.__frameworkParse(@node)
+            #Assert
+            doh.assertTrue(parseCalled)
+        tearDown: () ->
+            dom.parse = @originalParse
+    ,
+        name: "_placeHtml_controlHtmlId_htmlReplaced"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+            @control.PreviousId = "previd"
+            @control.AttachPoint = "someAttachPoint"
+            @templateHtml = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
+            @id = "someid"
+
+        runTest: (t) -> 
+            #mock
+            createdElement = document.createElement("div")
+            @originalCreate = dom.create
+            dom.create = (html) -> 
+                createdElement
+
+            @originalById = dom.byId
+            dom.byId = (id) -> 
+                true
+
+            placedNode = null
+            placedId = null
+            placedHow = null
+            @originalPlace = dom.place
+            dom.place = (node, domOrId, position) -> 
+                placedNode = node
+                placedId = domOrId
+                placedHow = position
+            #Act
+            renderer._placeHtml(@control, @templateHtml, @id)
+            #Assert
+            doh.assertEqual(createdElement, placedNode)
+            doh.assertEqual("widget_someid", placedId)
+            doh.assertEqual("replace", placedHow)
+        tearDown: () ->
+            dom.create = @originalCreate
+            dom.byId = @originalById
+            dom.place = @originalPlace
+    ,
+        name: "_placeHtml_controlHtml_htmlReplaced"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+            @control.PreviousId = "previd"
+            @control.AttachPoint = "someAttachPoint"
+            @templateHtml = "dummyTemplateString"
+
+        runTest: (t) -> 
+            #mock
+            createdElement = document.createElement("div")
+            @originalCreate = dom.create
+            dom.create = (html) -> 
+                createdElement
+
+            @originalById = dom.byId
+            dom.byId = (id) -> 
+                true
+
+            placedNode = null
+            placedId = null
+            placedHow = null
+            @originalPlace = dom.place
+            dom.place = (node, domOrId, position) -> 
+                placedNode = node
+                placedId = domOrId
+                placedHow = position
+            #Act
+            renderer._placeHtml(@control, @templateHtml)
+            #Assert
+            doh.assertEqual(createdElement, placedNode)
+            doh.assertEqual(@control.PreviousId, placedId)
+            doh.assertEqual("replace", placedHow)
+        tearDown: () ->
+            dom.create = @originalCreate
+            dom.byId = @originalById
+            dom.place = @originalPlace
+    ,
+        name: "_placeHtml_controlHtmlNoPreviousId_htmlPlacedAtAttachPoint"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+            @control.AttachPoint = "someAttachPoint"
+            @templateHtml = "dummyTemplateString"
+
+        runTest: (t) -> 
+            #mock
+            createdElement = document.createElement("div")
+            @originalCreate = dom.create
+            dom.create = (html) -> 
+                createdElement
+
+            @originalById = dom.byId
+            dom.byId = (id) -> 
+                true
+
+            placedNode = null
+            placedId = null
+            placedHow = null
+            @originalPlace = dom.place
+            dom.place = (node, domOrId, position) -> 
+                placedNode = node
+                placedId = domOrId
+                placedHow = position
+            #Act
+            renderer._placeHtml(@control, @templateHtml)
+            #Assert
+            doh.assertEqual(createdElement, placedNode)
+            doh.assertEqual( @control.AttachPoint, placedId)
+            doh.assertEqual(undefined, placedHow)
+        tearDown: () ->
+            dom.create = @originalCreate
+            dom.byId = @originalById
+            dom.place = @originalPlace
+    ,
+        name: "_registerNode_control_registerCalled"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+        runTest: (t) -> 
+            registerCalled = false
+            @originalRegister = dom.register
+            dom.register =(dom) -> 
+                registerCalled = true
+            #Act
+            renderer._registerNode(@control)
+            #Assert
+            doh.assertTrue(registerCalled)
+        tearDown: () ->
+            dom.register = @originalRegister
+    ,
+        name: "_bindData_controlAndDom_dataOnchangeAndSetterBound"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+            @control.Text = "sometext" #not really used in this test
+            @control.DataArray = [{data: "text1"}, {data: "text2"}]
+            @control.ControlId = "someid"
+            @id = @control.ControlId + "arrText{{_}}" #not really used in this test
+            @control._dataBindings = 
+                {
+                    "someid_input": {
+                        "html": "<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someid_LastUpdated": {
+                        "html": "<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someidarrText{{_}}": {
+                        "html": "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">",
+                        "prop": ["DataArray"],
+                        "key": "data"
+                    },
+                    "someidarrSpan{{_}}": {
+                        "html": "<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>",
+                        "prop": ["DataArray"],
+                        "key": null
+                    },
+                    "parsed": true
+                }
+            @control._setterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
+            @control._attachIds = {someid: {"id1": true, "id2": true}}
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-bind-to=\"Text\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                    <br />
+                        <input type=\"text\" value=\"text1\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText0\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=0 />
+                        <label for=\"someidarrText0\">
+                            <span id=\"someidarrSpan0\" data-bind-to=\"DataArray\" data-index=0>text1</span> 
+                        </label>
+                        <br />
+                        <input type=\"text\" value=\"text2\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=1 />
+                        <label for=\"someidarrText1\">
+                            <span id=\"someidarrSpan1\" data-bind-to=\"DataArray\" data-index=1>text2</span> 
+                        </label>
+                        <br />
+                </div>"
+            @node = dom.create html
+            @evt = {target: dom.create("<input type=\"text\" value=\"somenewvalue\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-bind-to=\"Text\" />")}
+        runTest: (t) -> 
+            _bindEventsCalled = false
+            @original_bindEvents = renderer._bindEvents
+            renderer._bindEvents = (control, dom, nodeId) -> 
+                _bindEventsCalled = "_bindEventsCalled"
+
+            _bindAttachPointsCalled = false
+            @original_bindAttachPoints = renderer._bindAttachPoints
+            renderer._bindAttachPoints = (control, dom, nodeId) -> 
+                _bindAttachPointsCalled = "_bindAttachPointsCalled"
+
+            _drawCalled = false
+            @original_draw = renderer._draw
+            renderer._draw = (control, id, index, data) -> 
+                _drawCalled = "_drawCalled"
+
+            connectCalled = []
+            connectedEventFunctions = []
+            @originalOn = lang.event.on
+            lang.event.on = (obj, event, context, method, dontFix) -> 
+                connectCalled.push event
+                connectedEventFunctions.push lang.hitch(context, method)
+            @originalAfter = lang.aspect.after
+            lang.aspect.after = (obj, event, context, method, dontFix) -> 
+                connectCalled.push event
+                connectedEventFunctions.push lang.hitch(context, method)
+
+            setCalled = []
+            @originalSet = @control.set
+            @control.set = (prop, value, index, self) -> 
+                setCalled.push prop
+
+            #Act
+            renderer._bindData(@control, @id, @node)
+            connectedEventFunctions[0]("Text", "somevalue", 1, "someidarrSpan0")
+            connectedEventFunctions[1](@evt)
+            #Assert
+            doh.assertEqual("_bindEventsCalled", _bindEventsCalled)
+            doh.assertEqual("_bindAttachPointsCalled", _bindAttachPointsCalled)
+            doh.assertEqual("_drawCalled", _drawCalled)
+            doh.assertEqual(["set", "change"], connectCalled)
+            doh.assertEqual(["Text"], setCalled)
+        tearDown: () ->
+            renderer._bindEvents = @original_bindEvents
+            renderer._bindAttachPoints = @original_bindAttachPoints
+            renderer._draw = @original_draw
+            lang.event.on = @originalOn
+            lang.aspect.after = @originalAfter
+            @control.set = @originalSet
+    ,
+        name: "_bindEvents_controlNodeNodeId_eventBoundAndAttachIdsSet"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-event=\"change:somehandler\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                </div>"
+            @node = dom.create html
+            @subnode = dom.find("input", @node)[0]
+        runTest: (t) -> 
+            somehandlerCalled = false
+            @control.somehandler = () -> 
+                somehandlerCalled = true
+            #Act
+            renderer._bindEvents(@control, @node, "someid")
+            lang.event.emit @subnode, "change"
+            #Assert
+            doh.assertTrue @control._attachIds["someid"]["someid_input"]
+            doh.assertTrue somehandlerCalled
+        tearDown: () ->
+    ,
+        name: "_bindEvents_controlNodeNodeId_eventBoundAndAttachIdsSet"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-point=\"somePoint\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                </div>"
+            @node = dom.create html
+            @subnode = dom.find("input", @node)[0]
+        runTest: (t) -> 
+            #Act
+            renderer._bindAttachPoints(@control, @node, "someid")
+            #Assert
+            doh.assertTrue @control._attachIds["someid"]["someid_input"]
+            doh.assertEqual @subnode, @control.somePoint
+        tearDown: () ->
+    ,
+        name: "_cleanDom_node_cleaned"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                </div>"
+            @node = dom.create html
+        runTest: (t) -> 
+            #Act
+            renderer._cleanDom(@node)
+            #Assert
+            findArray = dom.find '[data-dojo-type]', @node 
+            doh.assertEqual 0, findArray.length
+        tearDown: () ->
+    ,
+        name: "destroy_control_controlUiDestroyedAndUnregistered"
+        setUp: () ->
+            #Arrange
+            @control = new TemplatedDummyClass();
+            @control.ControlId = "someid"
+            @control._setterBindings = {_setterHandle: "_setterHandle", _domHandle: "_domHandle"}
+        runTest: (t) -> 
+            aspectRemoveCalled = false
+            @originalAspectRemove = lang.aspect.remove
+            lang.aspect.remove = (handle) -> 
+                aspectRemoveCalled = "aspectRemoveCalled"
+
+            eventRemoveCalled = false
+            @originalEventRemove = lang.event.remove
+            lang.event.remove = (handle) -> 
+                eventRemoveCalled = "eventRemoveCalled"
+
+            _unbindDataCalled = false
+            @original_unbindData = renderer._unbindData
+            renderer._unbindData = (control) -> 
+                _unbindDataCalled = "_unbindDataCalled"
+
+            _removeDomCalled = false
+            @original_removeDom = renderer._removeDom
+            renderer._removeDom = (control) -> 
+                _removeDomCalled = "_removeDomCalled"
+
+            _unregisterNodeCalled = false
+            @original_unregisterNode = renderer._unregisterNode
+            renderer._unregisterNode = (control) -> 
+                _unregisterNodeCalled = "_unregisterNodeCalled"
+
+            domDestroyCalled = false
+            @originalDomDestroy = dom.destroy
+            dom.destroy = (controlId) -> 
+                domDestroyCalled = "domDestroyCalled"
+            #Act
+            renderer.destroy(@control)
+            #Assert
+            doh.assertEqual "aspectRemoveCalled", aspectRemoveCalled
+            doh.assertEqual "eventRemoveCalled", eventRemoveCalled
+            doh.assertEqual "_unbindDataCalled", _unbindDataCalled
+            doh.assertEqual "_removeDomCalled", _removeDomCalled
+            doh.assertEqual "_unregisterNodeCalled", _unregisterNodeCalled
+            doh.assertEqual "domDestroyCalled", domDestroyCalled
+        tearDown: () ->
+            lang.aspect.remove = @originalAspectRemove
+            lang.event.remove = @originalEventRemove
+            renderer._unbindData = @original_unbindData
+            renderer._removeDom = @original_removeDom
+            renderer._unregisterNode = @original_unregisterNode
+            dom.destroy = @originalDomDestroy
+
+    ]

@@ -1,0 +1,18 @@
+{
+    "name": "Mizuhiki",
+    "version": "1.0",
+    "main": "Mizuhiki",
+    "dependencies": {
+    },
+    "description": "Mizuhiki lets you use mustache to render templates and then bind object properties to the markup for two way updating.",
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://www.opensource.org/licenses/MIT"
+        }
+    ],
+    "bugs": "none",
+    "keywords": ["JavaScript", "Binding", "Templating"],
+    "homepage": "hemsida",
+    "dojoBuild": "app.profile.js"
+}

@@ -1,0 +1,26 @@
+<div id="{{Id}}">
+    <input type="text" value="{{Text}}" data-dojo-type="dijit.form.TextBox" data-dojo-props="trim:true, propercase:true" id="{{Id}}_input" data-bind-to="Text" />
+    <label for="{{Id}}_input">
+        <span id="{{Id}}_LastUpdated" data-bind-to="Text">{{Text}}</span> 
+    </label>
+    <br />
+    {{#DataArray}}
+        {{> myPartial}}
+        <br />
+    {{/DataArray}}
+    {{^notSet}}
+        notSet wasnt set
+    {{/notSet}}
+    <br />
+    {{! ignore me }} was ignored
+    <br />
+    {{#objectContext}}
+        {{objectValue}}
+    {{/objectContext}}
+    <br />
+    Changing tags
+    {{=<< >>=}}
+    <<#shoutIt>>
+        bazinga
+    <</shoutIt>>
+</div>
