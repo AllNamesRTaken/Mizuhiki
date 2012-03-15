@@ -84,3 +84,8 @@ require [
     myobject.render()
 ```
 Ofcourse in a project you would register Mizuhiki as the choice for IRenderer in the Registrar and let the IoC of Clazzy inject that for you.
+
+How to Contribute
+-----------------
+- My IoC module can definately need some enhancing. Please let me know what a useful IoC should be able to do (and how thats done).
+- The SoyaMilk (mustache) module is horrible to understand (refactoring?)
