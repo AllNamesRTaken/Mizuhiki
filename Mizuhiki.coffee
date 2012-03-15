@@ -14,6 +14,7 @@ define [
         # Private Functions
         _draw: (control, id, index, data) -> 
             throw new Exception("IllegalObjectException", "Control isnt of type TemplatedObject") if control?.isnt TemplatedObject
+            control.Id or= @generateGuid()
             nodeId = id.replace "{{_}}", index if id
             @_unbindData control, nodeId
             @_removeWidgets control, nodeId    #Dojo specifics, destroyRecursive
@@ -22,14 +23,24 @@ define [
             html = @_parseTemplate control, id, index, data
             html = @__frameworkReplaceCustomAttributes html    #Dojo specifics 
             node = @_placeHtml control, html, nodeId
+            node.id = control.Id
             @_registerNode control if not id
             @__frameworkParse node
             @_bindData control, nodeId, node
             @_cleanDom node
-            control.PreviousId = control.ControlId
+            control.PreviousId = control.Id
+
+        generateGuid: (withDash = false, checkForNodes = true) ->
+            d = if withDash then "-" else ""
+            S4 = () ->
+                (((1+Math.random())*0x10000)|0).toString(16).substring(1)
+            guid = (S4()+S4()+d+S4()+d+S4()+d+S4()+d+S4()+S4()+S4())
+            while checkForNodes and _dom.byId(guid)
+                guid = (S4()+S4()+d+S4()+d+S4()+d+S4()+d+S4()+S4()+S4())
+            guid
 
         _unbindData: (control, id) -> 
-            nodeId = id or control.PreviousId or control.ControlId
+            nodeId = id or control.PreviousId or control.Id
             return if not nodeId
             node = _dom.byId nodeId
             return if not node
@@ -44,17 +55,17 @@ define [
                 delete control[control._attachPoints[key]] if control._attachPoints[key]
                 delete control._attachPoints[key] if control._attachPoints[key]
                 delete control._attachEvents[key] if control._attachEvents[key]
-                delete control._attachIds[control.PreviousId || control.ControlId][key]
+                delete control._attachIds[control.PreviousId || control.Id][key]
             delete control._attachIds[nodeId]
 
         _removeWidgets: (control, id) -> 
-            nodeId = id or control.PreviousId or control.ControlId
+            nodeId = id or control.PreviousId or control.Id
             return if not nodeId
             node.destroyRecursive() for node in _dom.findAllWidgets(nodeId)
             _dom.unregisterWidget(nodeId)
 
         _unregisterNode: (control) -> 
-            _dom.unregister(control.PreviousId or control.ControlId)
+            _dom.unregister(control.PreviousId or control.Id)
         
         _calculateBindings: (control) ->
             #This function parses the templateString with respect to its data bindings.
@@ -117,11 +128,11 @@ define [
             dom
 
         _registerNode: (control) -> 
-            _dom.register(control.ControlId, control)
+            _dom.register(control.Id, control)
         
         _bindData: (control, id, dom) -> 
-            nodeId = id || control.ControlId
-            control._attachIds[control.ControlId] = {} if  !control._attachIds[control.ControlId]
+            nodeId = id || control.Id
+            control._attachIds[control.Id] = {} if  !control._attachIds[control.Id]
             
             @_bindEvents(control, dom, nodeId)
             @_bindAttachPoints(control, dom, nodeId)
@@ -133,7 +144,7 @@ define [
                         for nodeId in control._setterBindings[prop]
                             @_draw control, nodeId, index, control[prop][index] if nodeId.replace("{{_}}", index) isnt self
                     value
-                control._setterBindings._domHandle = _lang.event.on _dom.byId(control.ControlId), 'change', this, (evt) -> 
+                control._setterBindings._domHandle = _lang.event.on _dom.byId(control.Id), 'change', this, (evt) -> 
                     dom = evt.target or evt.srcElement
                     dataindex = dom.getAttribute "data-index"
                     domId = dom.id
@@ -165,7 +176,7 @@ define [
                 node.removeAttribute "data-cleaned-attach-event"
                 control._attachIds[nodeId] = {} if  !control._attachIds[nodeId]
                 control._attachIds[nodeId][node.id] = true #the attachpoints only for part of the dom noted by nodeId
-                control._attachIds[control.ControlId][node.id] = true #all attachpoints as a dictionary keyed under the ControlId
+                control._attachIds[control.Id][node.id] = true #all attachpoints as a dictionary keyed under the Id
             0
 
         _bindAttachPoints: (control, dom, nodeId) ->
@@ -177,7 +188,7 @@ define [
                 node.removeAttribute "data-cleaned-attach-point"
                 control._attachIds[nodeId] = {} if  !control._attachIds[nodeId]
                 control._attachIds[nodeId][node.id] = true #the attachpoints only for part of the dom noted by nodeId
-                control._attachIds[control.ControlId][node.id] = true #all attachpoints as a dictionary keyed under the ControlId
+                control._attachIds[control.Id][node.id] = true #all attachpoints as a dictionary keyed under the Id
         
         _cleanDom: (dom) -> 
             typeAttributed = _dom.find '[data-dojo-type]', dom
@@ -190,4 +201,4 @@ define [
             @_unbindData(control)
             @_removeDom(control)
             @_unregisterNode(control)
-            _dom.destroy control.ControlId
+            _dom.destroy control.Id

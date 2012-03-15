@@ -5,6 +5,7 @@ define [
         templateString: "<div>Dummy</div>"
         __dependencies: ["IRenderer"],
         constructor: () -> 
+            @AttachPoint = document.body
             @_attachPoints = {}
             @_attachEvents = {}
             @_attachIds = {}

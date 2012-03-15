@@ -9,7 +9,7 @@ define [
     "mizuhiki/Mizuhiki"
     "clazzy/Exception"
     "mizuhiki/TemplatedObject"
-    "mizuhiki/SoyaMilk"
+    "mizuhiki/SoyaMilk" 
 ], (dojo, doh, Class, cache, _url, lang, dom, Renderer, Exception, TemplatedObject, soyamilk) ->
 
     renderer = new Renderer()
@@ -120,6 +120,29 @@ define [
             renderer._bindData = @original_bindData
             renderer._cleanDom = @original_cleanDom
     ,
+        name: "generateGuid_null_generates32CharGuid"
+        setUp: () ->
+            #Arrange
+        runTest: (t) -> 
+            m = new Mizuhiki()
+            #Act
+            guid = m.generateGuid();
+            #Assert
+            doh.assertTrue guid.length is 32
+        tearDown: () ->
+    ,
+        name: "generateGuid_null_generatesDifferent"
+        setUp: () ->
+            #Arrange
+        runTest: (t) -> 
+            m = new Mizuhiki()
+            #Act
+            guid1 = m.generateGuid();
+            guid2 = m.generateGuid();
+            #Assert
+            doh.assertNotEqual guid1, guid2
+        tearDown: () ->
+    ,
         name: "_unbindData_control_unbindsEvents"
         setUp: () ->
             #Arrange
@@ -198,13 +221,13 @@ define [
             #Arrange
             @originalRender = soyamilk.render
             soyamilk.render =(itemId, control, partials) -> 
-                itemId.replace("{{ControlId}}", "someid")
+                itemId.replace("{{Id}}", "someid")
 
             url = "../../../mizuhiki/tests/resources/DummyTemplate.html"
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
+            @control.Id = "someid"
             @control.templateString = cache new _url(url)
-            @expectedDataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
+            @expectedDataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{Id}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{Id}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
             @expectedSetterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
         runTest: (t) -> 
             #Act
@@ -232,17 +255,17 @@ define [
         tearDown: () ->
             soyamilk.render = @originalRender
     ,
-        name: "_parseTemplate_controlIdIndexData_soyaMilkRenderCalled"
+        name: "_parseTemplate_IdIndexData_soyaMilkRenderCalled"
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
-            @id = @control.ControlId + "arrText{{_}}"
+            @control.Id = "someid"
+            @id = @control.Id + "arrText{{_}}"
             @index = 1
             @data = {DataArray: "sometext"}
-            @control._dataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
+            @control._dataBindings = {"someid_input":{"html":"<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}_input\" data-bind-to=\"Text\">","prop":["Text"],"key":null},"someid_LastUpdated":{"html":"<span id=\"{{Id}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>","prop":["Text"],"key":null},"someidarrText{{_}}":{"html":"<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">","prop":["DataArray"],"key":"data"},"someidarrSpan{{_}}":{"html":"<span id=\"{{Id}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>","prop":["DataArray"],"key":null},"parsed":true}
             @control._setterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
-            @expectedTemplateString = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
+            @expectedTemplateString = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
         runTest: (t) -> 
             templateString = ""
             @originalRender = soyamilk.render
@@ -309,7 +332,7 @@ define [
             @control = new DummyClass();
             @control.PreviousId = "previd"
             @control.AttachPoint = "someAttachPoint"
-            @templateHtml = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
+            @templateHtml = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
             @id = "someid"
 
         runTest: (t) -> 
@@ -439,27 +462,27 @@ define [
             @control = new DummyClass();
             @control.Text = "sometext" #not really used in this test
             @control.DataArray = [{data: "text1"}, {data: "text2"}]
-            @control.ControlId = "someid"
-            @id = @control.ControlId + "arrText{{_}}" #not really used in this test
+            @control.Id = "someid"
+            @id = @control.Id + "arrText{{_}}" #not really used in this test
             @control._dataBindings = 
                 {
                     "someid_input": {
-                        "html": "<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}_input\" data-bind-to=\"Text\">",
+                        "html": "<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}_input\" data-bind-to=\"Text\">",
                         "prop": ["Text"],
                         "key": null
                     },
                     "someid_LastUpdated": {
-                        "html": "<span id=\"{{ControlId}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>",
+                        "html": "<span id=\"{{Id}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>",
                         "prop": ["Text"],
                         "key": null
                     },
                     "someidarrText{{_}}": {
-                        "html": "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{ControlId}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">",
+                        "html": "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">",
                         "prop": ["DataArray"],
                         "key": "data"
                     },
                     "someidarrSpan{{_}}": {
-                        "html": "<span id=\"{{ControlId}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>",
+                        "html": "<span id=\"{{Id}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>",
                         "prop": ["DataArray"],
                         "key": null
                     },
@@ -541,7 +564,7 @@ define [
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
+            @control.Id = "someid"
             html = 
                 "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
                     <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-event=\"change:somehandler\" />
@@ -567,7 +590,7 @@ define [
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
+            @control.Id = "someid"
             html = 
                 "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
                     <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-point=\"somePoint\" />
@@ -589,7 +612,7 @@ define [
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
+            @control.Id = "someid"
             html = 
                 "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
                     <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" />
@@ -610,7 +633,7 @@ define [
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control.ControlId = "someid"
+            @control.Id = "someid"
             @control._setterBindings = {_setterHandle: "_setterHandle", _domHandle: "_domHandle"}
         runTest: (t) -> 
             aspectRemoveCalled = false
@@ -640,7 +663,7 @@ define [
 
             domDestroyCalled = false
             @originalDomDestroy = dom.destroy
-            dom.destroy = (controlId) -> 
+            dom.destroy = (Id) -> 
                 domDestroyCalled = "domDestroyCalled"
             #Act
             renderer.destroy(@control)
