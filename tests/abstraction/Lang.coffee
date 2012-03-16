@@ -5,7 +5,7 @@ define [
     "clazzy/Exception"
 ], (dojo, doh, lang, Exception) ->
 
-    doh.register "clazzy.tests.abstraction.Lang", [
+    doh.register "mizuhiki.tests.abstraction.Lang", [
         name: "clone_objectWithObjectWithArrayInsideArray_areEqual"
         setUp: () ->
             #Arrange

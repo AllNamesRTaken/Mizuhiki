@@ -1,13 +1,13 @@
-<div id="{{ControlId}}">
-    <input type="text" value="{{Text}}" data-dojo-type="dijit.form.TextBox" data-dojo-props="trim:true, propercase:true" id="{{ControlId}}_input" data-bind-to="Text" />
-    <label for="{{ControlId}}_input">
-        <span id="{{ControlId}}_LastUpdated" data-bind-to="Text">{{Text}}</span> 
+<div id="{{Id}}">
+    <input type="text" value="{{Text}}" data-dojo-type="dijit.form.TextBox" data-dojo-props="trim:true, propercase:true" id="{{Id}}_input" data-bind-to="Text" />
+    <label for="{{Id}}_input">
+        <span id="{{Id}}_LastUpdated" data-bind-to="Text">{{Text}}</span> 
     </label>
     <br />
     {{#DataArray}}
-        <input type="text" value="{{data}}" data-dojo-type="dijit.form.TextBox" data-dojo-props="trim:true, propercase:true" id="{{ControlId}}arrText{{_}}" data-bind-to="DataArray" data-bind-to-key="data" data-index={{_}} />
-        <label for="{{ControlId}}arrText{{_}}">
-            <span id="{{ControlId}}arrSpan{{_}}" data-bind-to="DataArray" data-index={{_}}>{{data}}</span> 
+        <input type="text" value="{{data}}" data-dojo-type="dijit.form.TextBox" data-dojo-props="trim:true, propercase:true" id="{{Id}}arrText{{_}}" data-bind-to="DataArray" data-bind-to-key="data" data-index={{_}} />
+        <label for="{{Id}}arrText{{_}}">
+            <span id="{{Id}}arrSpan{{_}}" data-bind-to="DataArray" data-index={{_}}>{{data}}</span> 
         </label>
         <br />
     {{/DataArray}}
