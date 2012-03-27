@@ -19,7 +19,7 @@ define [
             doh.assertEqual {}, obj._dataBindings
             doh.assertEqual {}, obj._setterBindings
     ,
-        name: "render_null_callsIRenderer"
+        name: "render_null_callsIRendererRender"
         setUp: () ->
             #Arrange
             @obj = new TemplatedObject()
@@ -27,8 +27,23 @@ define [
             IRendererCalled = false
             @obj.IRenderer = 
                 render: (obj) ->
-            IRendererCalled = true
+                    IRendererCalled = true
             #Act
+            @obj.render()
+            #Assert
+            doh.assertTrue IRendererCalled
+    ,
+        name: "destroy_null_callsIRendererDestroy"
+        setUp: () ->
+            #Arrange
+            @obj = new TemplatedObject()
+        runTest: (t) -> 
+            IRendererCalled = false
+            @obj.IRenderer = 
+                destroy: (obj) ->
+                    IRendererCalled = true
+            #Act
+            @obj.destroy()
             #Assert
             doh.assertTrue IRendererCalled
     ]

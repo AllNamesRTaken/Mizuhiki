@@ -26,9 +26,10 @@ define [
             node.id = control.Id
             @_registerNode control if not id
             @__frameworkParse node
-            @_bindData control, nodeId, node
+            @_bindData control, nodeId, node if control.AttachPoint
             @_cleanDom node
             control.PreviousId = control.Id
+            control.PreviousAttachPoint = control.AttachPoint
 
         generateGuid: (withDash = false, checkForNodes = true) ->
             d = if withDash then "-" else ""
@@ -121,10 +122,21 @@ define [
             dom = _dom.create(html)
             widgetId = "widget_" + id if _dom.byId("widget_" + id)
             idPassed = nodeId is id
-            if control.PreviousId
+            attachPoint = if "string" is typeof control.AttachPoint then (if control.AttachPoint is "body" then document.body else _dom.byId(control.AttachPoint)) else control.AttachPoint
+            prevAttachPoint = control.PreviousAttachPoint
+
+            removeDom = (not attachPoint? and prevAttachPoint?) or (attachPoint? and prevAttachPoint? and attachPoint isnt prevAttachPoint)
+            replaceDom = prevAttachPoint? and attachPoint is prevAttachPoint
+            placeNewDom = attachPoint? and not replaceDom
+            
+            if removeDom
+                _dom.destroy control.Id
+            if replaceDom
                 _dom.place(dom, (if idPassed then widgetId or nodeId else control.PreviousId), 'replace')
-            else
-                _dom.place(dom, control.AttachPoint)
+            if placeNewDom
+                _dom.place(dom, attachPoint)
+            if not id
+                control.domNode = dom
             dom
 
         _registerNode: (control) -> 
@@ -199,6 +211,6 @@ define [
             _lang.aspect.remove control._setterBindings._setterHandle if control._setterBindings._setterHandle
             _lang.event.remove control._setterBindings._domHandle if control._setterBindings._domHandle
             @_unbindData(control)
-            @_removeDom(control)
+            @_removeWidgets(control)
             @_unregisterNode(control)
             _dom.destroy control.Id

@@ -10,11 +10,15 @@ define [
     "clazzy/Exception"
     "mizuhiki/TemplatedObject"
     "mizuhiki/SoyaMilk" 
-], (dojo, doh, Class, cache, _url, lang, dom, Renderer, Exception, TemplatedObject, soyamilk) ->
+], (dojo, doh, Class, cache, _url, lang, dom, Mizuhiki, Exception, TemplatedObject, soyamilk) ->
 
-    renderer = new Renderer()
+    renderer = new Mizuhiki()
     DummyClass = Class("namespace.Dummy", null, [null])
-    TemplatedDummyClass = Class("namespace.TemplatedDummy", TemplatedObject)
+    TemplatedDummyClass = Class("namespace.TemplatedDummy", TemplatedObject, null, 
+        constructor: () ->
+            @AttachPoint = document.body
+            this
+    )
 
     doh.register "mizuhiki.tests.Mizuhiki", [ 
 
@@ -124,9 +128,8 @@ define [
         setUp: () ->
             #Arrange
         runTest: (t) -> 
-            m = new Mizuhiki()
             #Act
-            guid = m.generateGuid();
+            guid = renderer.generateGuid();
             #Assert
             doh.assertTrue guid.length is 32
         tearDown: () ->
@@ -135,10 +138,9 @@ define [
         setUp: () ->
             #Arrange
         runTest: (t) -> 
-            m = new Mizuhiki()
             #Act
-            guid1 = m.generateGuid();
-            guid2 = m.generateGuid();
+            guid1 = renderer.generateGuid();
+            guid2 = renderer.generateGuid();
             #Assert
             doh.assertNotEqual guid1, guid2
         tearDown: () ->
@@ -332,6 +334,7 @@ define [
             @control = new DummyClass();
             @control.PreviousId = "previd"
             @control.AttachPoint = "someAttachPoint"
+            @control.PreviousAttachPoint = "someAttachPoint"
             @templateHtml = "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"1\">"
             @id = "someid"
 
@@ -344,7 +347,7 @@ define [
 
             @originalById = dom.byId
             dom.byId = (id) -> 
-                true
+                "someAttachPoint"
 
             placedNode = null
             placedId = null
@@ -371,6 +374,7 @@ define [
             @control = new DummyClass();
             @control.PreviousId = "previd"
             @control.AttachPoint = "someAttachPoint"
+            @control.PreviousAttachPoint = "someAttachPoint"
             @templateHtml = "dummyTemplateString"
 
         runTest: (t) -> 
@@ -382,7 +386,7 @@ define [
 
             @originalById = dom.byId
             dom.byId = (id) -> 
-                true
+                "someAttachPoint"
 
             placedNode = null
             placedId = null
@@ -419,7 +423,7 @@ define [
 
             @originalById = dom.byId
             dom.byId = (id) -> 
-                true
+                if id is "someAttachPoint" then "someAttachPoint" else true
 
             placedNode = null
             placedId = null
@@ -439,6 +443,48 @@ define [
             dom.create = @originalCreate
             dom.byId = @originalById
             dom.place = @originalPlace
+    ,
+        name: "_placeHtml_controlHtmlNoAttachPoint_nodeCreatedAndDomRemoved"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass();
+            @control.AttachPoint = null
+            @control.PreviousAttachPoint = "someAttachPoint"
+            @templateHtml = "dummyTemplateString"
+
+        runTest: (t) -> 
+            #mock
+            createdElement = document.createElement("div")
+            @originalCreate = dom.create
+            dom.create = (html) -> 
+                createdElement
+
+            @originalById = dom.byId
+            dom.byId = (id) -> 
+                true
+
+            domDestroyed = false
+            @originalDestroy = dom.destroy
+            dom.destroy = (id) -> 
+                domDestroyed = "domDestroyed"
+
+            placeCalled = false
+            @originalPlace = dom.place
+            dom.place = (node, domOrId, position) -> 
+                placeCalled = "placeCalled"
+            #Act
+            doh.assertEqual undefined, @control.domNode
+
+            renderer._placeHtml(@control, @templateHtml)
+            #Assert
+            doh.assertEqual(false, placeCalled)
+            doh.assertEqual("domDestroyed", domDestroyed)
+            doh.assertTrue @control.domNode
+        tearDown: () ->
+            dom.create = @originalCreate
+            dom.byId = @originalById
+            dom.place = @originalPlace
+            dom.destroy = @originalDestroy
     ,
         name: "_registerNode_control_registerCalled"
         setUp: () ->
@@ -651,10 +697,10 @@ define [
             renderer._unbindData = (control) -> 
                 _unbindDataCalled = "_unbindDataCalled"
 
-            _removeDomCalled = false
-            @original_removeDom = renderer._removeDom
-            renderer._removeDom = (control) -> 
-                _removeDomCalled = "_removeDomCalled"
+            _removeWidgets = false
+            @original_removeWidgets = renderer._removeWidgets
+            renderer._removeWidgets = (control) -> 
+                _removeWidgets = "_removeWidgets"
 
             _unregisterNodeCalled = false
             @original_unregisterNode = renderer._unregisterNode
@@ -671,14 +717,14 @@ define [
             doh.assertEqual "aspectRemoveCalled", aspectRemoveCalled
             doh.assertEqual "eventRemoveCalled", eventRemoveCalled
             doh.assertEqual "_unbindDataCalled", _unbindDataCalled
-            doh.assertEqual "_removeDomCalled", _removeDomCalled
+            doh.assertEqual "_removeWidgets", _removeWidgets
             doh.assertEqual "_unregisterNodeCalled", _unregisterNodeCalled
             doh.assertEqual "domDestroyCalled", domDestroyCalled
         tearDown: () ->
             lang.aspect.remove = @originalAspectRemove
             lang.event.remove = @originalEventRemove
             renderer._unbindData = @original_unbindData
-            renderer._removeDom = @original_removeDom
+            renderer._removeWidgets = @original_removeWidgets
             renderer._unregisterNode = @original_unregisterNode
             dom.destroy = @originalDomDestroy
 
