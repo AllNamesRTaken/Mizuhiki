@@ -26,6 +26,7 @@ define [
             node.id = control.Id
             @_registerNode control if not id
             @__frameworkParse node
+            @_runGenerators control, node
             @_bindData control, nodeId, node if control.AttachPoint
             @_cleanDom node
             control.PreviousId = control.Id
@@ -116,6 +117,10 @@ define [
                 _dom.parse(dom.parentNode)
             else
                 _dom.parse(dom)
+        _runGenerators: (control, node) ->
+            for generatorNode in _dom.find "[data-generator-function]", node
+                if (f = control[generatorNode.getAttribute("data-generator-function")]).call?
+                    _dom.replace generatorNode, f()
 
         _placeHtml: (control, html, id) -> 
             nodeId = id or control.PreviousId

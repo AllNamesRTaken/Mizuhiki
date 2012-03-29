@@ -16,9 +16,9 @@ define [
         name: "render_complexTemplateWithData_generatesCorrectHtml ->"
         setUp: () ->
             #Arrange
-            templateUrl = "../../../mizuhiki/tests/resources/Template.html"
+            templateUrl = "../../mizuhiki/tests/resources/Template.html"
             @templateString = cache new _url(templateUrl)
-            partialUrl = "../../../mizuhiki/tests/resources/Partial.html"
+            partialUrl = "../../mizuhiki/tests/resources/Partial.html"
             @partialString = cache new _url(partialUrl)
             @data = 
                 Id: "someid"

@@ -86,6 +86,11 @@ define [
             renderer.__frameworkParse = (dom) ->
                 this.__frameworkParseCalled = "__frameworkParseCalled"
 
+            renderer._runGeneratorsCalled = false
+            @original_runGenerators = renderer._runGenerators 
+            renderer._runGenerators = (dom) ->
+                this._runGeneratorsCalled = "_runGeneratorsCalled"
+
             renderer._bindDataCalled = false
             @original_bindData = renderer._bindData 
             renderer._bindData = (control, nodeId, dom) ->
@@ -109,6 +114,7 @@ define [
             doh.assertEqual("_placeHtmlCalled", renderer._placeHtmlCalled)
             doh.assertEqual("_registerNodeCalled", renderer._registerNodeCalled)
             doh.assertEqual("__frameworkParseCalled", renderer.__frameworkParseCalled)
+            doh.assertEqual("_runGeneratorsCalled", renderer._runGeneratorsCalled)
             doh.assertEqual("_bindDataCalled", renderer._bindDataCalled)
             doh.assertEqual("_cleanDomCalled", renderer._cleanDomCalled)
         tearDown: () ->
@@ -121,6 +127,7 @@ define [
             renderer._placeHtml = @original_placeHtml
             renderer._registerNode = @original_registerNode
             renderer.__frameworkParse = @original__frameworkParse
+            renderer._runGenerators = @original_runGenerators
             renderer._bindData = @original_bindData
             renderer._cleanDom = @original_cleanDom
     ,
@@ -225,7 +232,7 @@ define [
             soyamilk.render =(itemId, control, partials) -> 
                 itemId.replace("{{Id}}", "someid")
 
-            url = "../../../mizuhiki/tests/resources/DummyTemplate.html"
+            url = "../../mizuhiki/tests/resources/DummyTemplate.html"
             @control = new TemplatedDummyClass();
             @control.Id = "someid"
             @control.templateString = cache new _url(url)
@@ -307,6 +314,24 @@ define [
             doh.assertTrue(parseCalled)
         tearDown: () ->
             dom.parse = @originalParse
+    ,
+        name: "_runGenerators_controlAndNode_domReplacedWithResultFromGenerator"
+        setUp: () ->
+            #Arrange
+            @node = document.createElement("div");
+            @node.innerHTML = '<div></div><span data-generator-function="makeit"></span><div></div>'
+            @control = 
+                makeit: () ->
+                    el = document.createElement("span")
+                    el.innerHTML = "madeit"
+                    el
+            @expected = '<div></div><span>madeit</span><div></div>'
+        runTest: (t) -> 
+            #Act
+            renderer._runGenerators(@control, @node)
+            #Assert
+            doh.assertEqual @expected, @node.innerHTML
+        tearDown: () ->
     ,
         name: "__frameworkParse_domWithAttribute_parseCalledWithParent"
         setUp: () ->
