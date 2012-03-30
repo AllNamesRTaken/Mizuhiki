@@ -4,7 +4,7 @@ define [
     "clazzy/Clazzy"
     "dojo/cache"
     "dojo/_base/url"
-    "mizuhiki/abstraction/Lang" #used for event,aspect
+    "mizuhiki/abstraction/Lang" #used for event
     "mizuhiki/abstraction/Dom" #used for byid,findAllWidgets,unregisterWidget,unregister,parse,create,place,find,register,destroy
     "mizuhiki/Mizuhiki"
     "clazzy/Exception"
@@ -156,7 +156,6 @@ define [
         setUp: () ->
             #Arrange
             @control = new TemplatedDummyClass();
-            @control._setterBindings._setterHandle = "setterhandle"
             @control._setterBindings._domHandle = "domhandle"
             @control._attachPoints = {"id1": "attachPoint1", "id2": "attachPoint2"}
             @control._attachEvents = {"id1": ["handle1", "handle2"], "id2": ["handle3", "handle4"]}
@@ -173,9 +172,9 @@ define [
             @originalEventRemove = lang.event.remove
             lang.event.remove = (handle) ->
                 disconnected.push handle
-            @originalAspectRemove = lang.aspect.remove
-            lang.aspect.remove = (handle) ->
-                disconnected.push handle
+            @control._setterBindings._setterHandle = 
+                remove: () ->
+                    disconnected.push "setterhandle"
             #Act
             renderer._unbindData(@control)
             #Assert
@@ -183,7 +182,6 @@ define [
         tearDown: () ->
             dom.byId = @originalById
             lang.event.remove = @originalEventRemove
-            lang.aspect.remove = @originalAspectRemove
     ,
         name: "_removeWidgets_control_unregisterAndDestroyWidget"
         setUp: () ->
@@ -531,10 +529,8 @@ define [
         setUp: () ->
             #Arrange
             @control = new DummyClass();
-            @control.Text = "sometext" #not really used in this test
             @control.DataArray = [{data: "text1"}, {data: "text2"}]
             @control.Id = "someid"
-            @id = @control.Id + "arrText{{_}}" #not really used in this test
             @control._dataBindings = 
                 {
                     "someid_input": {
@@ -592,21 +588,14 @@ define [
             renderer._bindAttachPoints = (control, dom, nodeId) -> 
                 _bindAttachPointsCalled = "_bindAttachPointsCalled"
 
-            _drawCalled = false
-            @original_draw = renderer._draw
-            renderer._draw = (control, id, index, data) -> 
-                _drawCalled = "_drawCalled"
-
             connectCalled = []
-            connectedEventFunctions = []
             @originalOn = lang.event.on
             lang.event.on = (obj, event, context, method, dontFix) -> 
                 connectCalled.push event
-                connectedEventFunctions.push lang.hitch(context, method)
-            @originalAfter = lang.aspect.after
-            lang.aspect.after = (obj, event, context, method, dontFix) -> 
-                connectCalled.push event
-                connectedEventFunctions.push lang.hitch(context, method)
+
+            @originalWatch = @control.watch
+            @control.watch = (prop, callback) -> 
+                connectCalled.push "set"
 
             setCalled = []
             @originalSet = @control.set
@@ -615,21 +604,16 @@ define [
 
             #Act
             renderer._bindData(@control, @id, @node)
-            connectedEventFunctions[0]("Text", "somevalue", 1, "someidarrSpan0")
-            connectedEventFunctions[1](@evt)
+
             #Assert
             doh.assertEqual("_bindEventsCalled", _bindEventsCalled)
             doh.assertEqual("_bindAttachPointsCalled", _bindAttachPointsCalled)
-            doh.assertEqual("_drawCalled", _drawCalled)
             doh.assertEqual(["set", "change"], connectCalled)
-            doh.assertEqual(["Text"], setCalled)
         tearDown: () ->
             renderer._bindEvents = @original_bindEvents
             renderer._bindAttachPoints = @original_bindAttachPoints
-            renderer._draw = @original_draw
             lang.event.on = @originalOn
-            lang.aspect.after = @originalAfter
-            @control.set = @originalSet
+            @control.watch = @originalWatch
     ,
         name: "_bindEvents_controlNodeNodeId_eventBoundAndAttachIdsSet"
         setUp: () ->
@@ -706,11 +690,12 @@ define [
             @control = new TemplatedDummyClass();
             @control.Id = "someid"
             @control._setterBindings = {_setterHandle: "_setterHandle", _domHandle: "_domHandle"}
+
         runTest: (t) -> 
-            aspectRemoveCalled = false
-            @originalAspectRemove = lang.aspect.remove
-            lang.aspect.remove = (handle) -> 
-                aspectRemoveCalled = "aspectRemoveCalled"
+            watchRemoveCalled = false
+            @control._setterBindings._setterHandle = 
+                remove: () ->
+                    watchRemoveCalled = "watchRemoveCalled"
 
             eventRemoveCalled = false
             @originalEventRemove = lang.event.remove
@@ -739,14 +724,13 @@ define [
             #Act
             renderer.destroy(@control)
             #Assert
-            doh.assertEqual "aspectRemoveCalled", aspectRemoveCalled
+            doh.assertEqual "watchRemoveCalled", watchRemoveCalled
             doh.assertEqual "eventRemoveCalled", eventRemoveCalled
             doh.assertEqual "_unbindDataCalled", _unbindDataCalled
             doh.assertEqual "_removeWidgets", _removeWidgets
             doh.assertEqual "_unregisterNodeCalled", _unregisterNodeCalled
             doh.assertEqual "domDestroyCalled", domDestroyCalled
         tearDown: () ->
-            lang.aspect.remove = @originalAspectRemove
             lang.event.remove = @originalEventRemove
             renderer._unbindData = @original_unbindData
             renderer._removeWidgets = @original_removeWidgets

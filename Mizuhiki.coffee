@@ -1,6 +1,6 @@
 define [
     "clazzy/Clazzy"
-    "mizuhiki/abstraction/Lang" #used for aspect,event (on),trim,clone
+    "mizuhiki/abstraction/Lang" #used for event (on),trim,clone
     "mizuhiki/abstraction/Dom" #used for byId,findAllWidgets,unregister,unregisterWidget,create,find,parse,place,register,destroy
     "mizuhiki/SoyaMilk" #Mustache in Coffeescript -> Milk, Milk + AMD + MVVM fairy dust -> SoyaMilk
     "clazzy/Exception"
@@ -49,7 +49,7 @@ define [
             #Only proceed if the control has a rendered UI
             if not id
                 #If _drawing the entire control and not a subsection disconnect connection for setters as well as for the onchange on the dom
-                _lang.aspect.remove control._setterBindings._setterHandle if control._setterBindings._setterHandle
+                control._setterBindings._setterHandle.remove() if control._setterBindings._setterHandle
                 _lang.event.remove control._setterBindings._domHandle if control._setterBindings._domHandle
             for key of control._attachIds[nodeId]
                 #disconnect all events attached through the template and remove all pointers to attachpoints and events
@@ -156,11 +156,12 @@ define [
             
             #Actual data binding
             if control._setterBindings and not control._setterBindings._setterHandle
-                control._setterBindings._setterHandle = _lang.aspect.after control, 'set', this, (prop, value, index, self) -> 
+                control._setterBindings._setterHandle = control.watch '*', _lang.hitch(this, (prop, value, index, self) -> 
                     if prop of control._setterBindings
                         for nodeId in control._setterBindings[prop]
                             @_draw control, nodeId, index, control[prop][index] if nodeId.replace("{{_}}", index) isnt self
                     value
+                )
                 control._setterBindings._domHandle = _lang.event.on _dom.byId(control.Id), 'change', this, (evt) -> 
                     dom = evt.target or evt.srcElement
                     dataindex = dom.getAttribute "data-index"
@@ -213,7 +214,7 @@ define [
                 node.removeAttribute 'data-dojo-type'
 
         destroy: (control) ->
-            _lang.aspect.remove control._setterBindings._setterHandle if control._setterBindings._setterHandle
+            control._setterBindings._setterHandle.remove() if control._setterBindings._setterHandle
             _lang.event.remove control._setterBindings._domHandle if control._setterBindings._domHandle
             @_unbindData(control)
             @_removeWidgets(control)
