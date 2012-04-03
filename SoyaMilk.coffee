@@ -1,5 +1,7 @@
 define [
 ], () ->
+    'use strict'
+
     # Milk is a simple, fast way to get more Mustache into your CoffeeScript and
     # Javascript.
     #

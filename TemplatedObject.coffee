@@ -1,6 +1,8 @@
 define [
     "clazzy/Clazzy"
 ], ( Class ) ->
+    'use strict'
+
     Class "mizuhiki.TemplatedObject", null, null, 
         templateString: "<div>Dummy</div>"
         __dependencies: ["IRenderer"],

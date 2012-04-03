@@ -6,6 +6,8 @@ define [
     "clazzy/Exception"
     "mizuhiki/TemplatedObject"
 ], ( Class, _lang, _dom, soyamilk, Exception, TemplatedObject) ->
+    'use strict'
+
     Class "mizuhiki.Mizuhiki", null, null, 
 
         render: (control) -> 

@@ -6,6 +6,8 @@ define [
     "dojo/aspect"
     "clazzy/Exception"
 ], (_classy, _lang, _connect, _on, _aspect, Exception) ->
+    'use strict'
+
     Lang = 
         clone: (obj) ->
             _lang.clone obj

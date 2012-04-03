@@ -10,6 +10,8 @@ define [
     "dojo/NodeList-traverse"
     "dijit/form/TextBox"
 ], (_win, _html, _domGeom, _query, _domConstruct, _parser, _registry, Exception) ->
+    'use strict'
+    
     window.U4 = {} if not window.U4
     window.U4.__registry = {} if not window.U4.__registry
     registry = window.U4.__registry
