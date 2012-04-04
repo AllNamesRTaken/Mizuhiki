@@ -1,6 +1,6 @@
 var profile = (function () {
     var copyOnly = function(filename) {
-        };
+        return false;
     };
 
     var jsFile = /\.js$/;
