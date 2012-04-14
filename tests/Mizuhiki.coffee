@@ -228,7 +228,7 @@ define [
             #Arrange
             @originalRender = soyamilk.render
             soyamilk.render =(itemId, control, partials) -> 
-                itemId.replace("{{Id}}", "someid")
+                itemId.replace(/{{Id}}/g, "someid")
 
             url = "../../mizuhiki/tests/resources/DummyTemplate.html"
             @control = new TemplatedDummyClass();
@@ -240,7 +240,18 @@ define [
             #Act
             renderer._calculateBindings(@control)
             #Assert
-            doh.assertEqual(@expectedDataBindings, this.control._dataBindings)
+            doh.assertEqual(@expectedDataBindings.someid_LastUpdated, this.control._dataBindings.someid_LastUpdated)
+            exp_input = dom.create(@expectedDataBindings.someid_input.html)
+            input = dom.create(@control._dataBindings.someid_input.html)
+            doh.assertEqual(exp_input.getAttribute("type"), input.getAttribute("type"))
+            doh.assertEqual(exp_input.getAttribute("value"), input.getAttribute("value"))
+            doh.assertEqual(exp_input.getAttribute("data-dojo-type"), input.getAttribute("data-dojo-type"))
+            doh.assertEqual(exp_input.getAttribute("data-dojo-props"), input.getAttribute("data-dojo-props"))
+            doh.assertEqual(exp_input.getAttribute("id"), input.getAttribute("id"))
+            doh.assertEqual(exp_input.getAttribute("data-bind-to"), input.getAttribute("data-bind-to"))
+            doh.assertEqual(exp_input.innerHTML, input.innerHTML)
+            doh.assertEqual(@expectedDataBindings["someidarrSpan{{_}}"], this.control._dataBindings["someidarrSpan{{_}}"])
+            doh.assertEqual(@expectedDataBindings["someidarrText{{_}}"], this.control._dataBindings["someidarrText{{_}}"])
             doh.assertEqual(@expectedSetterBindings, this.control._setterBindings)
         tearDown: () ->
             soyamilk.render = @originalRender

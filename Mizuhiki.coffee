@@ -17,6 +17,7 @@ define [
         _draw: (control, id, index, data) -> 
             throw new Exception("IllegalObjectException", "Control isnt of type TemplatedObject") if control?.isnt TemplatedObject
             control.Id or= @generateGuid()
+            console.warn("No AttachPoint set on control " + control.Id + ". Control wont be visible.") if not control.AttachPoint
             nodeId = id.replace "{{_}}", index if id
             @_unbindData control, nodeId
             @_removeWidgets control, nodeId    #Dojo specifics, destroyRecursive
@@ -25,7 +26,7 @@ define [
             html = @_parseTemplate control, id, index, data
             html = @__frameworkReplaceCustomAttributes html    #Dojo specifics 
             node = @_placeHtml control, html, nodeId
-            node.id = control.Id
+            node.id = control.Id if not id
             @_registerNode control if not id
             @__frameworkParse node
             @_runGenerators control, node
@@ -158,7 +159,7 @@ define [
             
             #Actual data binding
             if control._setterBindings and not control._setterBindings._setterHandle
-                control._setterBindings._setterHandle = control.watch '*', _lang.hitch(this, (prop, value, index, self) -> 
+                control._setterBindings._setterHandle = control.watch '*', _lang.hitch(this, (prop, oldvalue, value, index, self) -> 
                     if prop of control._setterBindings
                         for nodeId in control._setterBindings[prop]
                             @_draw control, nodeId, index, control[prop][index] if nodeId.replace("{{_}}", index) isnt self
