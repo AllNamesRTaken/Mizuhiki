@@ -250,8 +250,21 @@ define [
             doh.assertEqual(exp_input.getAttribute("id"), input.getAttribute("id"))
             doh.assertEqual(exp_input.getAttribute("data-bind-to"), input.getAttribute("data-bind-to"))
             doh.assertEqual(exp_input.innerHTML, input.innerHTML)
+            doh.assertEqual(@expectedDataBindings.someid_input.prop, @control._dataBindings.someid_input.prop)
+
             doh.assertEqual(@expectedDataBindings["someidarrSpan{{_}}"], this.control._dataBindings["someidarrSpan{{_}}"])
-            doh.assertEqual(@expectedDataBindings["someidarrText{{_}}"], this.control._dataBindings["someidarrText{{_}}"])
+            
+            exp_input = dom.create(@expectedDataBindings["someidarrText{{_}}"].html)
+            input = dom.create(@control._dataBindings["someidarrText{{_}}"].html)
+            doh.assertEqual(exp_input.getAttribute("type"), input.getAttribute("type"))
+            doh.assertEqual(exp_input.getAttribute("value"), input.getAttribute("value"))
+            doh.assertEqual(exp_input.getAttribute("data-dojo-type"), input.getAttribute("data-dojo-type"))
+            doh.assertEqual(exp_input.getAttribute("data-dojo-props"), input.getAttribute("data-dojo-props"))
+            doh.assertEqual(exp_input.getAttribute("id"), input.getAttribute("id"))
+            doh.assertEqual(exp_input.getAttribute("data-bind-to"), input.getAttribute("data-bind-to"))
+            doh.assertEqual(exp_input.innerHTML, input.innerHTML)
+            doh.assertEqual(@expectedDataBindings.someid_input.prop, @control._dataBindings.someid_input.prop)
+
             doh.assertEqual(@expectedSetterBindings, this.control._setterBindings)
         tearDown: () ->
             soyamilk.render = @originalRender
