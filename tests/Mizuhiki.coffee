@@ -37,6 +37,16 @@ define [
         tearDown: () ->
             renderer._draw = @original_draw
     ,
+        name: "draw_nonTemplatedObject_throws"
+        setUp: () ->
+            #Arrange
+        runTest: (t) -> 
+            obj = new DummyClass()
+            #Act
+            #Assert
+            doh.assertError Exception, renderer, "_draw", [obj]
+        tearDown: () ->
+    ,
         name: "_draw_control_allPartsCalled"
         setUp: () ->
             # The mother of all mocking!
@@ -313,7 +323,7 @@ define [
         setUp: () ->
             #Arrange
             @text = "blabla data-dojo-attach blabla"
-            @targetText = "blabla data-cleaned-attach blabla"
+            @targetText = "blabla data-attach blabla"
         runTest: (t) -> 
             #Act
             text = renderer.__frameworkReplaceCustomAttributes(@text)
@@ -600,7 +610,6 @@ define [
                         <br />
                 </div>"
             @node = dom.create html
-            @evt = {target: dom.create("<input type=\"text\" value=\"somenewvalue\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-bind-to=\"Text\" />")}
         runTest: (t) -> 
             _bindEventsCalled = false
             @original_bindEvents = renderer._bindEvents
@@ -639,6 +648,163 @@ define [
             lang.event.on = @originalOn
             @control.watch = @originalWatch
     ,
+        name: "_bindData_controlAndDom_setCalls_draw"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass({Id:"someid", Text:1});
+            @control.DataArray = [{data: "text1"}, {data: "text2"}]
+            @control._dataBindings = 
+                {
+                    "someid_input": {
+                        "html": "<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}_input\" data-bind-to=\"Text\">",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someid_LastUpdated": {
+                        "html": "<span id=\"{{Id}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someidarrText{{_}}": {
+                        "html": "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">",
+                        "prop": ["DataArray"],
+                        "key": "data"
+                    },
+                    "someidarrSpan{{_}}": {
+                        "html": "<span id=\"{{Id}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>",
+                        "prop": ["DataArray"],
+                        "key": null
+                    },
+                    "parsed": true
+                }
+            @control._setterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
+            @control._attachIds = {someid: {"id1": true, "id2": true}}
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-bind-to=\"Text\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                    <br />
+                        <input type=\"text\" value=\"text1\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText0\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=0 />
+                        <label for=\"someidarrText0\">
+                            <span id=\"someidarrSpan0\" data-bind-to=\"DataArray\" data-index=0>text1</span> 
+                        </label>
+                        <br />
+                        <input type=\"text\" value=\"text2\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=1 />
+                        <label for=\"someidarrText1\">
+                            <span id=\"someidarrSpan1\" data-bind-to=\"DataArray\" data-index=1>text2</span> 
+                        </label>
+                        <br />
+                </div>"
+            @node = dom.create html
+        runTest: (t) -> 
+            @original_bindEvents = renderer._bindEvents
+            renderer._bindEvents = (control, dom, nodeId) -> 
+
+            @originalOn = lang.event.on
+            lang.event.on = (obj, event, context, method, dontFix) -> 
+
+            drawCalled = false
+            @original_draw = renderer._draw
+            renderer._draw = () -> 
+                drawCalled = "drawCalled";
+
+            renderer._bindData(@control, @id, @node)
+            #Act
+            @control.set("Text", 2)
+
+            #Assert
+            doh.assertEqual("drawCalled", drawCalled)
+        tearDown: () ->
+            renderer._bindEvents = @original_bindEvents
+            lang.event.on = @originalOn
+            renderer._draw = @original_draw
+    ,
+        name: "_bindData_controlAndDom_eventTriggersSet"
+        setUp: () ->
+            #Arrange
+            @control = new DummyClass({Id:"someid", Text:1});
+            @control.DataArray = [{data: "text1"}, {data: "text2"}]
+            @control._dataBindings = 
+                {
+                    "someid_input": {
+                        "html": "<input type=\"text\" value=\"{{Text}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}_input\" data-bind-to=\"Text\">",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someid_LastUpdated": {
+                        "html": "<span id=\"{{Id}}_LastUpdated\" data-bind-to=\"Text\">{{Text}}</span>",
+                        "prop": ["Text"],
+                        "key": null
+                    },
+                    "someidarrText{{_}}": {
+                        "html": "<input type=\"text\" value=\"{{data}}\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"{{Id}}arrText{{_}}\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=\"{{_}}\">",
+                        "prop": ["DataArray"],
+                        "key": "data"
+                    },
+                    "someidarrSpan{{_}}": {
+                        "html": "<span id=\"{{Id}}arrSpan{{_}}\" data-bind-to=\"DataArray\" data-index=\"{{_}}\">{{data}}</span>",
+                        "prop": ["DataArray"],
+                        "key": null
+                    },
+                    "parsed": true
+                }
+            @control._setterBindings = {"Text":["someid_input","someid_LastUpdated"],"DataArray":["someidarrText{{_}}","someidarrSpan{{_}}"]}
+            @control._attachIds = {someid: {"id1": true, "id2": true}}
+            html = 
+                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-bind-to=\"Text\" />
+                    <label for=\"someid_input\">
+                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
+                    </label>
+                    <br />
+                        <input type=\"text\" value=\"text1\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText0\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=0 />
+                        <label for=\"someidarrText0\">
+                            <span id=\"someidarrSpan0\" data-bind-to=\"DataArray\" data-index=0>text1</span> 
+                        </label>
+                        <br />
+                        <input type=\"text\" value=\"text2\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someidarrText1\" data-bind-to=\"DataArray\" data-bind-to-key=\"data\" data-index=1 />
+                        <label for=\"someidarrText1\">
+                            <span id=\"someidarrSpan1\" data-bind-to=\"DataArray\" data-index=1>text2</span> 
+                        </label>
+                        <br />
+                </div>"
+            @node = dom.create html
+            @control.domNode = @node
+        runTest: (t) -> 
+            @originalWatch = @control.watch
+            @control.watch = (prop, callback) -> 
+
+            setCalled = false
+            @originalSet = @control.set
+            @control.set = (prop, value, index, self) -> 
+                setCalled = prop
+
+            @original_bindAttachPoints = renderer._bindAttachPoints
+            renderer._bindAttachPoints = (control, dom, nodeId) -> 
+
+            @original_bindEvents = renderer._bindEvents
+            renderer._bindEvents = (control, dom, nodeId) -> 
+
+            renderer._bindData(@control, @id, @node)
+            document.body.appendChild @node
+            #Act
+            lang.event.emit(dom.find("input", @node)[0], "change", 
+                bubbles: true,
+                cancelable: true,
+                which: 1
+            )
+
+            #Assert
+            doh.assertEqual("Text", setCalled)
+        tearDown: () ->
+            dom.destroy @node
+            @control.watch = @originalWatch
+            @control.set = @originalSet
+            renderer._bindEvents = @original_bindEvents
+            renderer._bindAttachPoints = @original_bindAttachPoints
+    ,
         name: "_bindEvents_controlNodeNodeId_eventBoundAndAttachIdsSet"
         setUp: () ->
             #Arrange
@@ -646,7 +812,7 @@ define [
             @control.Id = "someid"
             html = 
                 "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
-                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-event=\"change:somehandler\" />
+                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-attach-event=\"change:somehandler\" />
                     <label for=\"someid_input\">
                         <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
                     </label>
@@ -663,28 +829,6 @@ define [
             #Assert
             doh.assertTrue @control._attachIds["someid"]["someid_input"]
             doh.assertTrue somehandlerCalled
-        tearDown: () ->
-    ,
-        name: "_bindEvents_controlNodeNodeId_eventBoundAndAttachIdsSet"
-        setUp: () ->
-            #Arrange
-            @control = new TemplatedDummyClass();
-            @control.Id = "someid"
-            html = 
-                "<div id=\"someid\" class=\"Text\" width: 100%; height: 100%\">
-                    <input type=\"text\" value=\"sometext\" data-dojo-type=\"dijit.form.TextBox\" data-dojo-props=\"trim:true, propercase:true\" id=\"someid_input\" data-cleaned-attach-point=\"somePoint\" />
-                    <label for=\"someid_input\">
-                        <span id=\"someid_LastUpdated\" data-bind-to=\"Text\">sometext</span> 
-                    </label>
-                </div>"
-            @node = dom.create html
-            @subnode = dom.find("input", @node)[0]
-        runTest: (t) -> 
-            #Act
-            renderer._bindAttachPoints(@control, @node, "someid")
-            #Assert
-            doh.assertTrue @control._attachIds["someid"]["someid_input"]
-            doh.assertEqual @subnode, @control.somePoint
         tearDown: () ->
     ,
         name: "_cleanDom_node_cleaned"

@@ -52,16 +52,17 @@ define [
             #Only proceed if the control has a rendered UI
             if not id
                 #If _drawing the entire control and not a subsection disconnect connection for setters as well as for the onchange on the dom
-                control._setterBindings._setterHandle.remove() if control._setterBindings._setterHandle
-                _lang.event.remove control._setterBindings._domHandle if control._setterBindings._domHandle
+                control._setterBindings._setterHandle? and control._setterBindings._setterHandle.remove()
+                control._setterBindings._domHandle? and _lang.event.remove control._setterBindings._domHandle
             for key of control._attachIds[nodeId]
                 #disconnect all events attached through the template and remove all pointers to attachpoints and events
                 _lang.event.remove(handle) for handle in control._attachEvents[key] if key of control._attachEvents
-                delete control[control._attachPoints[key]] if control._attachPoints[key]
-                delete control._attachPoints[key] if control._attachPoints[key]
-                delete control._attachEvents[key] if control._attachEvents[key]
-                delete control._attachIds[control.PreviousId || control.Id][key]
+                control._attachPoints[key]? and delete control[control._attachPoints[key]]
+                control._attachPoints[key]? and delete control._attachPoints[key]
+                control._attachEvents[key]? and delete control._attachEvents[key]
+                delete control._attachIds[control.PreviousId or control.Id][key]
             delete control._attachIds[nodeId]
+            undefined
 
         _removeWidgets: (control, id) -> 
             nodeId = id or control.PreviousId or control.Id
@@ -113,7 +114,7 @@ define [
             _lang.trim(soyamilk.render(templateString, control, control.partials or= {}))
 
         __frameworkReplaceCustomAttributes: (html) -> 
-            html = html.replace(/data-dojo-attach/gi, "data-cleaned-attach");
+            html = html.replace(/data-dojo-attach/gi, "data-attach");
 
         __frameworkParse: (dom) -> 
             if dom.parentNode and dom.hasAttribute "data-dojo-type"
@@ -122,8 +123,9 @@ define [
                 _dom.parse(dom)
         _runGenerators: (control, node) ->
             for generatorNode in _dom.find "[data-generator-function]", node
-                if (f = control[generatorNode.getAttribute("data-generator-function")]).call?
-                    _dom.replace generatorNode, f()
+                if (f = control[generatorName = generatorNode.getAttribute("data-generator-function")]).call?
+                    _dom.replace generatorNode, f.call(control)
+                    control[generatorName + "Startup"]() if control[generatorName + "Startup"]?
 
         _placeHtml: (control, html, id) -> 
             nodeId = id or control.PreviousId
@@ -165,7 +167,7 @@ define [
                             @_draw control, nodeId, index, control[prop][index] if nodeId.replace("{{_}}", index) isnt self
                     value
                 )
-                control._setterBindings._domHandle = _lang.event.on _dom.byId(control.Id), 'change', this, (evt) -> 
+                control._setterBindings._domHandle = _lang.event.on control.domNode, 'change', this, (evt) -> 
                     dom = evt.target or evt.srcElement
                     dataindex = dom.getAttribute "data-index"
                     domId = dom.id
@@ -186,27 +188,27 @@ define [
             _getFunction = (eventString) -> 
                 _lang.trim eventString.substr(eventString.indexOf(":") + 1)
 
-            attachEventDoms = _dom.find '[data-cleaned-attach-event]', dom
+            attachEventDoms = _dom.find '[data-attach-event]', dom
             for node in attachEventDoms
-                events = (node.getAttribute "data-cleaned-attach-event").split(",").map (event) ->
+                events = (node.getAttribute "data-attach-event").split(",").map (event) ->
                     {event: _getEvent(event), func: _getFunction(event)}
                 
                 control._attachEvents[node.id] = [] if !control._attachEvents[node.id]
                 for event in events
                     control._attachEvents[node.id].push _lang.event.on(node, event.event, control, event.func) if event.event and event.func
-                node.removeAttribute "data-cleaned-attach-event"
+                node.removeAttribute "data-attach-event"
                 control._attachIds[nodeId] = {} if  !control._attachIds[nodeId]
                 control._attachIds[nodeId][node.id] = true #the attachpoints only for part of the dom noted by nodeId
                 control._attachIds[control.Id][node.id] = true #all attachpoints as a dictionary keyed under the Id
             0
 
         _bindAttachPoints: (control, dom, nodeId) ->
-            attachPointDoms = _dom.find '[data-cleaned-attach-point]', dom
+            attachPointDoms = _dom.find '[data-attach-point]', dom
             for node in attachPointDoms
-                attachPointName = node.getAttribute "data-cleaned-attach-point"
+                attachPointName = node.getAttribute "data-attach-point"
                 control[attachPointName] = node
                 control._attachPoints[node.id] = attachPointName
-                node.removeAttribute "data-cleaned-attach-point"
+                node.removeAttribute "data-attach-point"
                 control._attachIds[nodeId] = {} if  !control._attachIds[nodeId]
                 control._attachIds[nodeId][node.id] = true #the attachpoints only for part of the dom noted by nodeId
                 control._attachIds[control.Id][node.id] = true #all attachpoints as a dictionary keyed under the Id
