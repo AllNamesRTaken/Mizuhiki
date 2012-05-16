@@ -1,11 +1,11 @@
 define [
-    "clazzy/Clazzy"
+    "clazzy/abstraction/Lang"
     "dojo/_base/lang"
     "dojo/_base/connect"
     "dojo/on"
     "dojo/aspect"
     "clazzy/Exception"
-], (_classy, _lang, _connect, _on, _aspect, Exception) ->
+], (_classyLang, _lang, _connect, _on, _aspect, Exception) ->
     'use strict'
 
     Lang = 
@@ -29,8 +29,13 @@ define [
             remove: (handle) -> 
                 handle.remove()
         hitch: (that, func) ->
-            if not that then func else () -> 
-                func.apply(that, arguments || [])
+            _classyLang.hitch.apply(this, arguments)
+
         trim: (str) -> 
-            _lang.trim str
+            if String::trim then str.trim() else str.replace /^\s+|\s+$/g, ""
+
+        # Underscore abstractions
+
+        indexOf: _classyLang.indexOf
+        map: _classyLang.map
 

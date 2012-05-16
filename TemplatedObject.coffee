@@ -1,11 +1,12 @@
 define [
     "clazzy/Clazzy"
-], ( Class ) ->
+    "clazzy/abstraction/Lang"
+], ( Class , lang) ->
     'use strict'
 
     Class "mizuhiki.TemplatedObject", null, null, 
         templateString: "<div>Dummy</div>"
-        __dependencies: ["IRenderer"],
+        __dependencies: ["IRenderer"]
         constructor: () -> 
             @AttachPoint = null
             @PreviousAttachPoint = null

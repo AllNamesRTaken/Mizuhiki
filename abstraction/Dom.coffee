@@ -7,9 +7,9 @@ define [
     "dojo/parser"
     "dijit/registry"
     "clazzy/Exception"
+    "dojo/mouse"
     "dojo/NodeList-traverse"
-    "dijit/form/TextBox"
-], (_win, _html, _domGeom, _query, _domConstruct, _parser, _registry, Exception) ->
+], (_win, _html, _domGeom, _query, _domConstruct, _parser, _registry, Exception, _mouse) ->
     'use strict'
     
     window.U4 = {} if not window.U4
@@ -28,8 +28,14 @@ define [
             _query query, root
         findAllWidgets: (rootId) -> 
             if rootId
-                root = if rootId instanceof HTMLElement then rootId else @byId rootId
+                root = if rootId?.nodeType is 1 then rootId else @byId rootId
                 if root then _registry.findWidgets root else []
+        mouse:
+            enter: _mouse.enter
+            isLeft: _mouse.isLeft
+            isMiddle: _mouse.isMiddle
+            isRight: _mouse.isRight
+            leave: _mouse.leave
         place: (node, domOrId, position) ->
             el = @byId domOrId
             switch position
