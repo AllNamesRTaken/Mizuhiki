@@ -20,8 +20,9 @@ define [
       [name, parts...] = name.split(/\./)
       for i in [stack.length - 1...-1]
         continue unless stack[i]?
-        continue unless typeof stack[i] is 'object' and name of (ctx = stack[i])
-        value = ctx[name]
+        ctx = stack[i]
+        continue unless typeof stack[i] is 'object' and (((hazit = ctx.haz isnt undefined) and ctx.haz(name)) or name of ctx)
+        value = if hazit then ctx.get(name) else ctx[name]
         break
 
       value = Find(part, [value]) for part in parts
@@ -169,7 +170,12 @@ define [
                 value = [value] unless isArray = value instanceof Array
                 parsed = Parse(tmpl or '', delims)
                 #Loop indexing for SoyaMilk done here.
-                (value[i]._ = i) for i of value if isArray
+                if isArray
+                  value = value.slice();
+                  for i of value 
+                    if typeof(value[i]) is "string"
+                      value[i] = {text:value[i]}
+                    (value[i]["_"] = i)
 
                 context.push(value)
                 result = for v in value

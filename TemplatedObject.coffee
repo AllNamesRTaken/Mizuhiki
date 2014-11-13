@@ -1,32 +1,30 @@
-define [
-    "clazzy/Clazzy"
+  define [
+    "clazzy/Clazzy", 
     "clazzy/abstraction/Lang"
-], ( Class , lang) ->
-    'use strict'
-
+  ], (Class, lang, templateNameLocator, templateRegistry) -> 
+    'use strict'; 
+    
     Class "mizuhiki.TemplatedObject", null, null, 
-        templateString: "<div>Dummy</div>"
-        __dependencies: ["IRenderer"]
-        constructor: () -> 
-            @AttachPoint = null
-            @PreviousAttachPoint = null
-            @Id = null
-            @PreviousId = null
-            @domNode = null
-            @_attachPoints = {}
-            @_attachEvents = {}
-            @_attachIds = {}
-            @_dataBindings = {}
-            @_setterBindings = {}
-            @_started = false
-            @startup()
-            this
+      __dependencies: ["IRenderer", "IRendererMeta"]
+      templateString: "<div>Dummy</div>"
+      constructor: () ->
+        @addModel(
+          Id: null
+          AttachPoint: null
+        )
+        @PreviousAttachPoint = null
+        @PreviousId = null
+        @domNode = null
+        @_started = false
+        @startup()
+        this
+      
+      startup: () ->
+        @_started = true
+      
+      render: () ->
+        return @IRenderer.render(this)
+      
+      destroy: () ->
+        return @IRenderer.destroy(this)
         
-        startup: () ->
-            @_started = true
-
-        render: () -> 
-            @IRenderer.render this
-
-        destroy: () -> 
-            @IRenderer.destroy this

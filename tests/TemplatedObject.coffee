@@ -13,11 +13,11 @@ define [
             #Act
             obj = new TemplatedObject()
             #Assert
-            doh.assertEqual {}, obj._attachPoints
-            doh.assertEqual {}, obj._attachEvents
-            doh.assertEqual {}, obj._attachIds
-            doh.assertEqual {}, obj._dataBindings
-            doh.assertEqual {}, obj._setterBindings
+            doh.assertTrue obj.haz "AttachPoint"
+            doh.assertTrue obj.haz "PreviousAttachPoint"
+            doh.assertTrue obj.haz "PreviousId"
+            doh.assertTrue obj.haz "domNode"
+            doh.assertTrue obj.haz "_started"
     ,
         name: "render_null_callsIRendererRender"
         setUp: () ->

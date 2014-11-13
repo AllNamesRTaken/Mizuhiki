@@ -38,4 +38,3 @@ define [
 
         indexOf: _classyLang.indexOf
         map: _classyLang.map
-
