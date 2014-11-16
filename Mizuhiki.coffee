@@ -147,11 +147,12 @@ define [
             domNode = dom.create(html)
             widgetId = "widget_" + id if dom.byId("widget_" + id)
             idPassed = nodeId is id
-            if "string" is typeof control.get("AttachPoint")
-                attachPoint = if control.get("AttachPoint") is "body" then document.body else dom.byId(control.get("AttachPoint"))
-            else 
-                attachPoint = control.get("AttachPoint")
+            attachPoint = control.get("AttachPoint")
+            if "string" is typeof attachPoint
+                attachPoint = if attachPoint is "body" then document.body else dom.byId(attachPoint)
             prevAttachPoint = control.get("PreviousAttachPoint")
+            if "string" is typeof prevAttachPoint
+                prevAttachPoint = if prevAttachPoint is "body" then document.body else dom.byId(prevAttachPoint)
 
             removeDom = (not attachPoint? and prevAttachPoint?) or (attachPoint? and prevAttachPoint? and attachPoint isnt prevAttachPoint)
             replaceDom = prevAttachPoint? and attachPoint is prevAttachPoint
@@ -160,7 +161,7 @@ define [
             if removeDom
                 dom.destroy control.get("Id")
             if replaceDom
-                dom.place(domNode, (if idPassed then widgetId or nodeId else control.get("PreviousId")), 'replace')
+                dom.replace((if idPassed then widgetId or nodeId else control.get("PreviousId")), domNode)
             if placeNewDom
                 dom.place(domNode, attachPoint)
             if not id

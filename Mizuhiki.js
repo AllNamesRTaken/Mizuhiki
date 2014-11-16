@@ -218,12 +218,14 @@
           widgetId = "widget_" + id;
         }
         idPassed = nodeId === id;
-        if ("string" === typeof control.get("AttachPoint")) {
-          attachPoint = control.get("AttachPoint") === "body" ? document.body : dom.byId(control.get("AttachPoint"));
-        } else {
-          attachPoint = control.get("AttachPoint");
+        attachPoint = control.get("AttachPoint");
+        if ("string" === typeof attachPoint) {
+          attachPoint = attachPoint === "body" ? document.body : dom.byId(attachPoint);
         }
         prevAttachPoint = control.get("PreviousAttachPoint");
+        if ("string" === typeof prevAttachPoint) {
+          prevAttachPoint = prevAttachPoint === "body" ? document.body : dom.byId(prevAttachPoint);
+        }
         removeDom = ((attachPoint == null) && (prevAttachPoint != null)) || ((attachPoint != null) && (prevAttachPoint != null) && attachPoint !== prevAttachPoint);
         replaceDom = (prevAttachPoint != null) && attachPoint === prevAttachPoint;
         placeNewDom = (attachPoint != null) && !replaceDom;
@@ -231,7 +233,7 @@
           dom.destroy(control.get("Id"));
         }
         if (replaceDom) {
-          dom.place(domNode, (idPassed ? widgetId || nodeId : control.get("PreviousId")), 'replace');
+          dom.replace((idPassed ? widgetId || nodeId : control.get("PreviousId")), domNode);
         }
         if (placeNewDom) {
           dom.place(domNode, attachPoint);
